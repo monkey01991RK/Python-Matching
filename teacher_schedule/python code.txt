@@ -1,0 +1,162 @@
+
+# import pandas as pd
+
+# # Use a raw string (r'...') to avoid backslash issues
+# file_path_student = r'E:\japanese_tak\students Schedual\2025春期講習日程(小学生) (1).xlsx'
+# file_path_teacher = r'E:\japanese_tak\teacher Schedual\2025春期講習日程(講師) (1).xlsx'
+# # Load all sheets
+# all_sheets_student = pd.read_excel(file_path_student, sheet_name=None)
+# all_sheets_teacher = pd.read_excel(file_path_teacher, sheet_name=None)
+
+# # Loop through and print or process each sheet
+# for sheet_name, df in all_sheets_student.items():
+#     print(f"\n--- Sheet: {sheet_name} ---")
+#     print(df)  # or process each DataFrame however you like
+
+
+# ======================================
+
+import pandas as pd
+from pathlib import Path
+from collections import defaultdict
+from fpdf import FPDF
+
+# File paths (your uploaded files)
+student_file = r'E:\japanese_tak\students Schedual\2025春期講習日程(小学生) (1).xlsx'
+teacher_file =  r'E:\japanese_tak\teacher Schedual\2025春期講習日程(講師) (1).xlsx'
+output_excel = "master_schedule.xlsx"
+output_pdf = "master_schedule.pdf"
+
+# Step 1: Load schedules
+def load_student_schedules(filename):
+    xls = pd.ExcelFile(filename)
+    students = {}
+    for name in xls.sheet_names:
+        df = xls.parse(name)
+        df['Student'] = name
+        students[name] = df
+    return students
+
+def load_teacher_schedules(filename):
+    xls = pd.ExcelFile(filename)
+    teachers = {}
+    for name in xls.sheet_names:
+        df = xls.parse(name)
+        df['Teacher'] = name
+        teachers[name] = df
+    return teachers
+students = load_student_schedules(student_file)
+print(students)
+teachers = load_teacher_schedules(teacher_file)
+
+# Step 2: Normalize and index schedules
+def build_student_time_index(students):
+    index = defaultdict(list)
+    for student, df in students.items():
+        for _, row in df.iterrows():
+          
+            if pd.notna(row.get('時')) and pd.notna(row.get('分')):
+                time = f"{int(row['時']):02}:{int(row['分']):02}"
+                subject = str(row['科目']).replace(' ', '').replace('　', '').strip()  # Normalize subject
+                index[time].append({
+                    'student': student,
+                    'subject': subject,
+                    'time': time,
+                    'raw': row
+                })
+    return index
+
+
+def build_teacher_time_index(teachers):
+    index = defaultdict(list)
+    for teacher, df in teachers.items():
+        for _, row in df.iterrows():
+     
+            if pd.notna(row.get('生徒')) and pd.notna(row.get('科目')) and pd.notna(row.get('時')) and pd.notna(row.get('分')):
+                time = f"{int(row['時']):02}:{int(row['分']):02}"
+                subject = str(row['科目']).replace(' ', '').replace('　', '').strip()  # Normalize subject
+                index[time].append({
+                    'teacher': teacher,
+                    'student': row['生徒'],
+                    'subject': subject,
+                    'time': time,
+                    'raw': row
+                })
+    return index
+
+student_index = build_student_time_index(students)
+teacher_index = build_teacher_time_index(teachers)
+
+# Step 3: Match students to teachers
+schedule = []
+
+
+for time_slot in sorted(set(teacher_index.keys())):
+    teachers_at_time = teacher_index[time_slot]
+    students_at_time = student_index.get(time_slot, [])
+    used_students = set()
+
+    for teacher in teachers_at_time:
+        match_candidates = [s for s in students_at_time if s['subject'] == teacher['subject'] and s['name'] not in used_students]
+        if not match_candidates:
+            continue
+
+        student1 = match_candidates[0]
+        used_students.add(student1['name'])
+
+        student2 = None
+        for s in match_candidates[1:]:
+            if s['name'] != student1['name']:
+                student2 = s
+                used_students.add(s['name'])
+                break
+
+        entry = {
+            'Time': time_slot,
+            'Teacher': teacher['teacher'],
+            'Student1_Name': student1['name'],
+            'Student1_Grade': student1['grade'],
+            'Student1_Subject': student1['subject'],
+            'Student2_Name': student2['name'] if student2 else '',
+            'Student2_Grade': student2['grade'] if student2 else '',
+            'Student2_Subject': student2['subject'] if student2 else ''
+        }
+        schedule.append(entry)
+
+# Step 4: Save to Excel
+df_schedule = pd.DataFrame(schedule)
+
+if df_schedule.empty:
+    print("No schedule entries matched between students and teachers.")
+    exit()
+
+df_schedule.sort_values(by=['Time', 'Teacher'], inplace=True)
+df_schedule.to_excel(output_excel, index=False)
+
+# Step 5: Create PDF
+def export_pdf(df, filename):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=9)
+
+    col_widths = [20, 30, 20, 20, 30, 20, 20]
+    headers = ['Time', 'Teacher', 'Student1_Name', 'Student1_Grade', 'Student1_Subject', 'Student2_Name', 'Student2_Grade', 'Student2_Subject']
+
+    def draw_row(row_data):
+        for i, cell in enumerate(row_data):
+            w = col_widths[i] if i < len(col_widths) else 20
+            pdf.cell(w, 8, str(cell), border=1, ln=0, align='C')
+        pdf.ln()
+
+    draw_row(headers)
+    for _, row in df.iterrows():
+        draw_row([
+            row['Time'], row['Teacher'],
+            row['Student1_Name'], row['Student1_Grade'], row['Student1_Subject'],
+            row['Student2_Name'], row['Student2_Grade'], row['Student2_Subject']
+        ])
+
+    pdf.output(filename)
+
+export_pdf(df_schedule, output_pdf)
+print("Master schedule created successfully as Excel and PDF!")
