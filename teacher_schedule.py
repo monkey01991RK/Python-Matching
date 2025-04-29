@@ -13,7 +13,7 @@ class Teacher_data:
         self.sheet_names = self.xls.sheet_names
 
     def extract_schedule_calendar_blocks(self, file_path):
-        results = []
+        raw_results = []
         self._read_path(file_path)
 
         for sheet in self.sheet_names:
@@ -22,7 +22,7 @@ class Teacher_data:
                 continue
 
             # Extract teacher name
-            teach_name = str(df.iloc[0, 7]).strip() if not pd.isna(df.iloc[0, 7]) else sheet
+            teach_name = sheet if pd.isna(df.iloc[0, 7]) else str(df.iloc[0, 7]).strip()
 
             # For each block of 8 rows
             for date_idx in range(2, len(df), 8):
@@ -35,7 +35,7 @@ class Teacher_data:
                 if not month_match:
                     continue
 
-                month_str = month_match.group(1).translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+                month_str = month_match[1].translate(str.maketrans("０１２３４５６７８９", "0123456789"))
                 current_month = int(month_str)
 
                 # Loop through date columns (2, 4, 6, ...)
@@ -43,13 +43,11 @@ class Teacher_data:
                     raw_day = str(df.iloc[date_idx, col])
                     if "日" not in raw_day and not re.search(r"\d{1,2}", raw_day):
                         continue
-
                     try:
                         day = int(re.sub(r"[^\d]", "", raw_day))
                         class_date = datetime(2025, current_month, day).date()
                     except ValueError:
                         continue
-
                     # Time and schedule rows (rows +2 to +6)
                     for row_idx in range(date_idx + 2, date_idx + 7):
                         if row_idx >= len(df):
@@ -62,10 +60,10 @@ class Teacher_data:
                         time_match = re.match(r"\d{1,2}[:：]\d{2}", str(time_cell))
                         if not time_match:
                             continue
-                        time_str = time_match.group(0).replace("：", ":")
+                        time_str = time_match[0].replace("：", ":")
 
                         # Check all adjacent columns for multiple entries
-                        for offset in range(0, 2):  # check current and next column (e.g., col, col+1)
+                        for offset in range(2):
                             check_col = col + offset
                             if check_col >= df.shape[1]:
                                 continue
@@ -80,7 +78,7 @@ class Teacher_data:
 
                             student_name, subject = parts[0].strip(), parts[1].strip()
 
-                            results.append({
+                            raw_results.append({
                                 "Teacher name": teach_name,
                                 "Student name": student_name,
                                 "Subject": subject,
@@ -88,13 +86,26 @@ class Teacher_data:
                                 "Time": time_str
                             })
 
-        return results
+        # Now group the raw results
+        grouped = {}
+        for entry in raw_results:
+            key = (entry["Teacher name"], entry["Date"], entry["Time"])
+            if key not in grouped:
+                grouped[key] = {
+                    "Teacher name": entry["Teacher name"],
+                    "Student name": [],
+                    "Subject": [],
+                    "Date": entry["Date"],
+                    "Time": entry["Time"]
+                }
+            grouped[key]["Student name"].append(entry["Student name"])
+            grouped[key]["Subject"].append(entry["Subject"])
+
+        return list(grouped.values())
 
     def teach_main(self):
         all_schedules = self.extract_schedule_calendar_blocks(self.stu_file_path)
-
         output_path = "teacher_schedule.json"
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(all_schedules, f, ensure_ascii=False, indent=2)
-
-        print(f"✅ Schedule exported to {output_path} with {len(all_schedules)} entries.")
+        print(f"Schedule exported to {output_path} with {len(all_schedules)} entries.")
