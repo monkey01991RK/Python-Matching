@@ -158,6 +158,7 @@ class Schedule_result:
                         break
                     if len(last_scheduled[pair_key]) >= total_classes:
                         break
+                    print(self.schedule_data)
         self.date_order = sorted({entry['date'] for entry in self.schedule_data})
     def generate_teacher_excel(self):
         if not self.schedule_data:
@@ -258,7 +259,7 @@ class Schedule_result:
                     for sheet_name in template_wb.sheetnames:
                         student_norm = _normalize_name(student)
                         sheet_norm = _normalize_name(sheet_name)
-                        print(student_norm, "==", sheet_norm)
+                        # print(student_norm, "==", sheet_norm)
                         # Direct full or partial match
                         if (
                             student_norm == sheet_norm or
@@ -272,6 +273,7 @@ class Schedule_result:
                             new_ws = copy_worksheet_template(wb, template_ws, new_sheet_name)
 
                             for entry in student_entries:
+                                
                                 row = int(TIME_ROW_MAP.get(entry['time'])) + 8 * self._date_to_row(entry['date']) 
                                 col = self._date_to_col(entry['date'])
                                 if row and col:
