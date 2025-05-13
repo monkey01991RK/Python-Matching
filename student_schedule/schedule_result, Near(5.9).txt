@@ -1,0 +1,208 @@
+import json
+import os
+from openpyxl import load_workbook, Workbook
+import unicodedata
+import re
+from copy import copy
+from openpyxl.cell.cell import Cell
+
+def _normalize_name(name: str) -> str:
+    return unicodedata.normalize("NFKC", name.replace("　", " ")).strip()
+
+# Updated time mapping based on actual Excel template
+TIME_ROW_MAP = {
+    "13:10": 5,
+    "14:40": 6,
+    "16:30": 7,
+    "18:00": 8,
+    "19:30": 9,
+}
+
+def copy_worksheet_template(target_wb, template_ws, new_title):
+    new_ws = target_wb.create_sheet(title=new_title)
+    for row in template_ws.iter_rows():
+        for cell in row:
+            if not isinstance(cell, Cell):  # Skip MergedCell
+                continue
+            new_cell = new_ws.cell(row=cell.row, column=cell.column, value=cell.value)
+            if cell.has_style:
+                new_cell.font = copy(cell.font)
+                new_cell.border = copy(cell.border)
+                new_cell.fill = copy(cell.fill)
+                new_cell.number_format = copy(cell.number_format)
+                new_cell.protection = copy(cell.protection)
+                new_cell.alignment = copy(cell.alignment)
+
+    for merged_range in template_ws.merged_cells.ranges:
+        new_ws.merge_cells(str(merged_range))
+
+    return new_ws
+
+class Schedule_result:
+    def __init__(self, student_data, teacher_data, match_data, student_template, teacher_template):
+        self.student_data = {
+            _normalize_name(k): v for k, v in student_data.items()
+        }
+        self.teacher_data = {
+            _normalize_name(k): v for k, v in teacher_data.items()
+        }
+        self.subject_data = match_data
+        self.student_template = student_template
+        self.teacher_template = teacher_template
+
+        self.teacher_output_path = "output/teachers_schedule.xlsx"
+        self.student_output_dirs = {
+            'elementary': "output/students_elementary.xlsx",
+            'middle': "output/students_middle.xlsx",
+            'high': "output/students_high.xlsx",
+        }
+        self.schedule_data = []
+        self.date_order = []
+
+    def run(self):
+        self.generate_schedule()
+        self.generate_teacher_excel()
+        self.generate_student_excels()
+
+    def generate_schedule(self):
+        matched_pairs = set()
+        teacher_daily_count = {}
+        student_daily_count = {}
+
+        for entry in self.subject_data:
+            full_name = _normalize_name(entry.get('student_name', ''))
+            grade = entry.get('grade', 'other')
+            if full_name not in self.student_data:
+                continue
+
+            for subj in entry.get('subjects', []):
+                if not isinstance(subj, dict):
+                    continue
+
+                subject = subj.get('name')
+                teacher_avail = { _normalize_name(k): v for k, v in self.teacher_data.items() }
+                raw_teacher = subj.get('teacher', '')
+                if isinstance(raw_teacher, dict):
+                    teacher = _normalize_name(raw_teacher.get('name', ''))
+                else:
+                    teacher = _normalize_name(raw_teacher)
+
+                subject_type = '特別' if subj.get('special_classes', 0) > 0 else '通常'
+                if (full_name, teacher, subject) in matched_pairs:
+                    continue
+
+                student_avail = self.student_data.get(full_name, {}).get("schedule", {})
+                teacher_avail = self.teacher_data.get(teacher, {}).get("schedule", {})
+                if not teacher_avail:
+                    continue
+
+                for date in sorted(student_avail.keys()):
+                    if date not in teacher_avail:
+                        continue
+
+                    teacher_daily = teacher_daily_count.setdefault(teacher, {})
+                    student_daily = student_daily_count.setdefault(full_name, {})
+
+                    if teacher_daily.get(date, 0) >= 2:
+                        continue
+                    if student_daily.get(date, 0) >= 2:
+                        continue
+
+                    for time_slot, is_free in student_avail[date].items():
+                        if time_slot not in TIME_ROW_MAP:
+                            continue
+                        teacher_is_free = teacher_avail[date].get(time_slot, False)
+                        if is_free and teacher_is_free:
+                            self.schedule_data.append({
+                                'date': date,
+                                'time': time_slot,
+                                'student': full_name,
+                                'teacher': teacher,
+                                'subject': subject,
+                                'type': subject_type,
+                                'grade': grade
+                            })
+                            student_avail[date][time_slot] = False
+                            teacher_avail[date][time_slot] = False
+                            matched_pairs.add((full_name, teacher, subject))
+                            teacher_daily[date] = teacher_daily.get(date, 0) + 1
+                            student_daily[date] = student_daily.get(date, 0) + 1
+                            break
+
+        self.date_order = sorted({entry['date'] for entry in self.schedule_data})
+
+    def generate_teacher_excel(self):
+        teachers = {entry['teacher'] for entry in self.schedule_data}
+        if not teachers:
+            print("⚠️ No teacher data found — no file saved.")
+            return
+
+        wb = Workbook()
+        wb.remove(wb.active)
+
+        for teacher in teachers:
+            wb_template = load_workbook(self.teacher_template)
+            template_ws = wb_template.active
+            ws_template = copy_worksheet_template(wb, template_ws, teacher[:30])
+
+            for entry in self.schedule_data:
+                if entry['teacher'] == teacher:
+                    row = TIME_ROW_MAP.get(entry['time'])
+                    if not row:
+                        print(f"⚠️ Unknown time format: {entry['time']}")
+                        continue
+                    col = self._date_to_col(entry['date'])
+                    if col < 1 or row < 1:
+                        continue
+                    cell = ws_template.cell(row=row, column=col)
+                    if cell.value:
+                        cell.value += f"\n{entry['student']}:{entry['subject']}"
+                    else:
+                        cell.value = f"{entry['student']}:{entry['subject']}"
+
+        os.makedirs(os.path.dirname(self.teacher_output_path), exist_ok=True)
+        wb.save(self.teacher_output_path)
+
+    def generate_student_excels(self):
+        grouped_students = {'elementary': [], 'middle': [], 'high': []}
+        for entry in self.schedule_data:
+            grade = entry['grade']
+            if grade in grouped_students:
+                grouped_students[grade].append(entry)
+
+        for category, entries in grouped_students.items():
+            if not entries:
+                continue
+
+            wb = Workbook()
+            wb.remove(wb.active)
+            students = {entry['student'] for entry in entries}
+
+            for student in students:
+                wb_template = load_workbook(self.student_template)
+                template_ws = wb_template.active
+                ws_template = copy_worksheet_template(wb, template_ws, student[:30])
+
+                for entry in entries:
+                    if entry['student'] == student:
+                        row = TIME_ROW_MAP.get(entry['time'])
+                        if not row:
+                            print(f"⚠️ Unknown time format: {entry['time']}")
+                            continue
+                        col = self._date_to_col(entry['date'])
+                        if col < 1 or row < 1:
+                            continue
+                        ws_template.cell(row=row, column=col).value = entry['subject']
+                        ws_template.cell(row=row, column=col + 1).value = entry['type']
+
+            path = self.student_output_dirs[category]
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            wb.save(path)
+
+    def _date_to_col(self, date_str):
+        base_col = 3
+        try:
+            index = self.date_order.index(date_str)
+        except ValueError:
+            index = 0
+        return base_col + index * 2

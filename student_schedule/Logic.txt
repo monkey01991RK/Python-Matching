@@ -1,0 +1,16 @@
+The first file above is the student, and the second file is the teacher's lecture schedule.
+And you have already created data between the student and the teacher in charge.
+Based on this, you are going to write a Python code that matches the timetables that the teacher and the student are matched with and records and outputs them in the student and teacher's timetables respectively.
+In other words, write a code that implements the logic of analyzing the two JSON data obtained and the data between the student and the teacher in charge that you created, and creating data that matches the subject and lecture time data that can match the teacher and the student with the values ​​that are false in the JSON data of the current teacher and student, and outputting it as an Excel file.
+The supplementary logic is as follows.
+First, group all teachers based on the student.
+Next, starting from the teacher with the largest number of subjects, record the subjects in the timetables that the student and teacher have and create a timetable.
+At this time, enter the distribution chart for one subject once a week and place the remaining lectures in the appropriate locations as a basic rule.
+The important thing here is that one teacher can only teach two students at the same time.
+At this time, the subjects of the two students can be different. Check the schedule based on the following teachers and check if two students are matched to one teacher. If not, enter data related to other students for that teacher. Create teacher data in this way and complete student data based on it.
+Then output the data for the matched teachers and students to the teacher table and student table respectively.
+Write a Python code that includes the above logic.
+
+============================================
+--ADD--
+You have created a comprehensive table, but I want to print out a file with a sheet for each student and a file with a sheet for each teacher. The files printed out should match the comprehensive table structure.

@@ -1,0 +1,764 @@
+[
+  {
+    "grade": "小2",
+    "student_name": "金澤　凛",
+    "subjects": [
+      {
+        "name": "国算",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 0
+      },
+      {
+        "name": "国語",
+        "teacher": "松永　愛央",
+        "regular_classes": 0,
+        "special_classes": 2
+      },
+      {
+        "name": "算数",
+        "teacher": "松永　愛央",
+        "regular_classes": 0,
+        "special_classes": 2
+      }
+    ]
+  },
+  {
+    "grade": "小3",
+    "student_name": "森下　美結",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "松本　海大",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小3",
+    "student_name": "中津　智成",
+    "subjects": [
+      {
+        "name": "国算",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 0
+      },
+      {
+        "name": "国語",
+        "teacher": "渡邊　塁",
+        "regular_classes": 0,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "渡邊　塁",
+        "regular_classes": 0,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "ローズ　オーウェン",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "和田　歩夢",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "増田　ことの",
+    "subjects": [
+      {
+        "name": "文系",
+        "teacher": "米田　叡付",
+        "regular_classes": 12,
+        "special_classes": 0
+      },
+      {
+        "name": "理系",
+        "teacher": "入野　僚介",
+        "regular_classes": 12,
+        "special_classes": 0
+      },
+      {
+        "name": "国語",
+        "teacher": "米田　叡付",
+        "regular_classes": 0,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "入野　僚介",
+        "regular_classes": 0,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "中津　知佳",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "松本　海大",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "理社",
+        "teacher": "和田　歩夢",
+        "regular_classes": 6,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "末光　琉偉",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "松本　海大",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "荒井　雄一郎",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "米田　叡付",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "中村 祐理",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "新田　隼士",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "劉　東軒",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小5",
+    "student_name": "田口　晴椛",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小6",
+    "student_name": "佐山　樹",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "和田　歩夢",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小6",
+    "student_name": "酒井　康行",
+    "subjects": [
+      {
+        "name": "文系",
+        "teacher": "和田　歩夢",
+        "regular_classes": 12,
+        "special_classes": 6
+      },
+      {
+        "name": "理系",
+        "teacher": "渡邊　塁",
+        "regular_classes": 12,
+        "special_classes": 6
+      }
+    ]
+  },
+  {
+    "grade": "小6",
+    "student_name": "前原　有希",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "松本　海大",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "小6",
+    "student_name": "塩澤　一真",
+    "subjects": [
+      {
+        "name": "国語",
+        "teacher": "米田　叡付",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "算数",
+        "teacher": "松本　海大",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "内海　光乃",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "玉屋　優虎",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "梅田　莉那",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "田中　にこ",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "丸山　惺大",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "和田　歩夢",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "山口　喜輝",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "俵　潤",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "吉田　薫",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": "近藤　大倖",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "渡邊　塁",
+        "regular_classes": 3,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "新田　隼士",
+        "regular_classes": 3,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中1",
+    "student_name": " 小副川　怜",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "山口　喜輝",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "平田　幸之助",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "米田　叡付",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "冨永　直希",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "劉　東軒",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "吉益　煌",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "安田　貴時",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "佐竹　優",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "劉　東軒",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "西野　結菜",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中2",
+    "student_name": "藤内　潤",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "安田　貴時",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "米田　叡付",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "丸本　琥太郎",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "高橋　実央",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "劉　東軒",
+        "regular_classes": 6,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "寺田　幸村",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "渡邊　塁",
+        "regular_classes": 6,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "曳野　鴻志",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "山口　喜輝",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "国語",
+        "teacher": "米田　叡付",
+        "regular_classes": 0,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "仲村　海音",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "劉　東軒",
+        "regular_classes": 6,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "中3",
+    "student_name": "安平　紗菜",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "英語",
+        "teacher": "松永　愛央",
+        "regular_classes": 6,
+        "special_classes": 4
+      },
+      {
+        "name": "国語",
+        "teacher": "米田　叡付",
+        "regular_classes": 3,
+        "special_classes": 4
+      }
+    ]
+  },
+  {
+    "grade": "高1",
+    "student_name": "中村　正人",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "高野　安紀",
+        "regular_classes": 3,
+        "special_classes": 0
+      },
+      {
+        "name": "英語",
+        "teacher": "和田　歩夢",
+        "regular_classes": 3,
+        "special_classes": 0
+      }
+    ]
+  },
+  {
+    "grade": "高1",
+    "student_name": "松井　流河",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 3,
+        "special_classes": 0
+      },
+      {
+        "name": "英語",
+        "teacher": "米田　叡付",
+        "regular_classes": 3,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "高1",
+    "student_name": "田嶋　玲奈",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "入野　僚介",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "和田　歩夢",
+        "regular_classes": 6,
+        "special_classes": 0
+      }
+    ]
+  },
+  {
+    "grade": "高1",
+    "student_name": "石綿　辰之助",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "山口　喜輝",
+        "regular_classes": 6,
+        "special_classes": 3
+      },
+      {
+        "name": "英語",
+        "teacher": "新田　隼士",
+        "regular_classes": 6,
+        "special_classes": 3
+      }
+    ]
+  },
+  {
+    "grade": "高1",
+    "student_name": "侯　景耀",
+    "subjects": [
+      {
+        "name": "数学",
+        "teacher": "渡邊　塁",
+        "regular_classes": 3,
+        "special_classes": 0
+      },
+      {
+        "name": "英語",
+        "teacher": "米田　叡付",
+        "regular_classes": 3,
+        "special_classes": 0
+      }
+    ]
+  }
+]
