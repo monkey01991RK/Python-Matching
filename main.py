@@ -9,6 +9,7 @@ from tkinter import filedialog
 import os
 import json  # ← added for JSON loading
 
+
 class MainDisplay:
     BACKGROUND_COLOR = "#f5f5f5"
 

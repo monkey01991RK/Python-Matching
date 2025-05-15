@@ -1,0 +1,30 @@
+# Scheduling System
+
+This project provides a scheduling system for students and teachers, including:
+
+- **Student schedules:** Assign subjects to students.
+- **Teacher schedules:** Assign students to teacher time slots.
+
+## Modules
+
+### 1. `time_grid.py`
+Generates time grids for student and teacher availability.
+
+### 2. `match_module.py`
+Matches students to teachers and generates a `JSON` schedule with all the assignments.
+
+### 3. `schedule_result.py`
+Schedules the lessons based on availability, writes the teacher and student schedules to Excel files.
+
+## Configuration
+
+You can configure paths for the output Excel files, as well as templates used for both students and teachers.
+
+### Example:
+```python
+schedule_result = Schedule_result(
+    student_data, teacher_data, match_data, student_template, teacher_template, date_list,
+    teacher_output_path="custom_teacher_schedule.xlsx", student_output_dirs={
+        'elementary': "custom_students_elementary.xlsx"
+    }
+)

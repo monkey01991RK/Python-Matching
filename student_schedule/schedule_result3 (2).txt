@@ -1,0 +1,128 @@
+import json
+import os
+import copy
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+
+class Schedule_result:
+    def __init__(self, student_data_path, teacher_data_path, match_data_path,student_template, teacher_template):
+        self.student_data_path = student_data_path
+        self.teacher_data_path = teacher_data_path
+        self.match_data_path = match_data_path
+        # self.load_data()
+        self.student_template = student_template
+        self.teacher_template = teacher_template
+
+        self.teacher_output_path = "output/teachers_schedule.xlsx"
+        self.student_output_dirs = {
+            'elementary': "output/students_elementary.xlsx",
+            'middle': "output/students_middle.xlsx",
+            'high': "output/students_high.xlsx",
+            'other': "output/students_other.xlsx",
+        }
+
+        self.schedule_data = []
+    
+    def run(self):
+        self.generate_student_excels()
+        self.generate_teacher_excel()
+
+    def generate_schedule(self):
+        # Step 1: Match students to teachers per subject
+        for entry in self.subject_data:
+            student = entry['student']
+            teacher = entry['teacher']
+            subject = entry['subject']
+            subject_type = entry['type']
+            grade = entry.get('grade', 'other')
+
+            student_avail = self.student_data.get(student, {})
+            teacher_avail = self.teacher_data.get(teacher, {})
+
+            for date, time_slots in student_avail.items():
+                if date in teacher_avail:
+                    for time_slot, student_free in time_slots.items():
+                        if teacher_avail[date].get(time_slot, False) and student_free:
+                            self.schedule_data.append({
+                                'date': date,
+                                'time': time_slot,
+                                'student': student,
+                                'teacher': teacher,
+                                'subject': subject,
+                                'type': subject_type,
+                                'grade': grade
+                            })
+                            teacher_avail[date][time_slot] = False  # Mark teacher busy
+                            student_avail[date][time_slot] = False  # Mark student busy
+                            break
+
+    def generate_teacher_excel(self):
+        wb = load_workbook(self.teacher_template)
+        ws_template = wb.active
+
+        teachers = set(entry['teacher'] for entry in self.schedule_data)
+
+        for teacher in teachers:
+            ws = wb.copy_worksheet(ws_template)
+            ws.title = teacher[:30]  # Excel sheet name limit
+
+            for entry in self.schedule_data:
+                if entry['teacher'] == teacher:
+                    cell = ws.cell(row=int(entry['time']) + 1, column=self._date_to_col(entry['date']))
+                    if cell.value:
+                        cell.value = f"{cell.value}\n{entry['student']}:{entry['subject']}"
+                    else:
+                        cell.value = f"{entry['student']}:{entry['subject']}"
+
+        wb.remove(ws_template)
+        os.makedirs(os.path.dirname(self.teacher_output_path), exist_ok=True)
+        wb.save(self.teacher_output_path)
+
+    def generate_student_excels(self):
+        grouped_students = {'elementary': [], 'middle': [], 'high': [], 'other': []}
+        for entry in self.schedule_data:
+            grade = entry['grade']
+            if grade in grouped_students:
+                grouped_students[grade].append(entry)
+            else:
+                grouped_students['other'].append(entry)
+
+        for category, entries in grouped_students.items():
+            wb = load_workbook(self.student_template)
+            ws_template = wb.active
+            students = {entry['student'] for entry in entries}
+
+            for student in students:
+                ws = wb.copy_worksheet(ws_template)
+                ws.title = student[:30]
+
+                for entry in entries:
+                    if entry['student'] == student:
+                        row = int(entry['time']) + 1
+                        col = self._date_to_col(entry['date'])
+                        ws.cell(row=row, column=col).value = entry['subject']
+                        ws.cell(row=row, column=col + 1).value = entry['type']
+
+            wb.remove(ws_template)
+            path = self.student_output_dirs[category]
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            wb.save(path)
+
+    def _date_to_col(self, date_str):
+        # Assuming dates are sorted and fixed in the template from column 3 onward
+        # Implement a map or dynamic lookup if needed
+        base_col = 3
+        date_order = sorted({entry['date'] for entry in self.schedule_data})
+        date_map = {date: i for i, date in enumerate(date_order)}
+        return base_col + date_map[date_str] * 2  # every date occupies 2 columns
+
+# if __name__ == '__main__':
+#     scheduler = Schedule_result(
+#         student_json_path='json/student_attendance.json',
+#         teacher_json_path='json/teacher_attendance.json',
+#         subject_json_path='json/subject_teacher_student.json',
+#         template_path='template/template.xlsx'
+#     )
+#     scheduler.generate_schedule()
+#     scheduler.write_teacher_schedule()
+#     scheduler.write_student_schedules()

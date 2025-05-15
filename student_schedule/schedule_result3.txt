@@ -1,0 +1,187 @@
+import os
+from collections import defaultdict
+from openpyxl import load_workbook, Workbook
+from openpyxl.styles import Alignment
+from datetime import datetime
+import shutil
+
+
+class Schedule_result:
+    def __init__(self, student_data, teacher_data, match_data, student_template, teacher_template):
+        self.student_data = student_data
+        self.teacher_data = teacher_data
+        self.match_data = match_data
+        self.student_template = student_template
+        self.teacher_template = teacher_template
+
+        self.times = ["13:10", "14:40", "16:30", "18:00", "19:30"]
+        self.result_dir = os.path.join(os.getcwd(), "result")
+        os.makedirs(self.result_dir, exist_ok=True)
+
+        self.student_slots = defaultdict(lambda: defaultdict(set))
+        self.teacher_slots = defaultdict(lambda: defaultdict(set))
+        self.assigned = []  # (student, teacher, subject, date, time, kind, grade)
+
+    def normalize_date(self, date_str):
+        try:
+            return datetime.strptime(date_str.strip(), "%Y-%m-%d").strftime("%Y-%m-%d")
+        except Exception:
+            return date_str.strip()
+
+    def normalize_time(self, time_str):
+        return time_str.strip()
+
+    def prepare_slots(self):
+        for entry in self.student_data:
+            name = entry["Student name"].strip()
+            date = self.normalize_date(entry["Date"])
+            time = self.normalize_time(entry["Time"])
+            self.student_slots[name][date].add(time)
+
+        for entry in self.teacher_data:
+            name = entry["Teacher name"].strip()
+            date = self.normalize_date(entry["Date"])
+            time = self.normalize_time(entry["Time"])
+            self.teacher_slots[name][date].add(time)
+
+    def assign(self):
+        for student_entry in self.match_data:
+            sname = student_entry["student_name"].strip()
+            grade = student_entry.get("grade", "その他").strip()
+            for subj in student_entry.get("subjects", []):
+                tname = (subj.get("teacher") or "").strip()
+                if not tname:
+                    continue  # Skip if teacher is missing
+                subject = subj.get("name", "").strip()
+
+
+                # 🔍 Debug missing teacher/student in availability data
+                if tname not in self.teacher_slots:
+                    print("❌ Teacher not found in teacher_slots:", tname)
+                if sname not in self.student_slots:
+                    print("❌ Student not found in student_slots:", sname)
+
+
+                for class_type in ["regular", "special"]:
+                    total = int(subj.get(f"{class_type}_classes") or 0)
+                    kind = "通常" if class_type == "regular" else "講習"
+                    count = 0
+
+                    common_dates = sorted(set(self.teacher_slots[tname]) & set(self.student_slots[sname]))
+                    print(f"🔍 Matching {sname} with {tname} on subject {subject}")
+                    print("Student dates:", self.student_slots[sname].keys())
+                    print("Teacher dates:", self.teacher_slots[tname].keys())
+                    print("Common dates:", common_dates)
+                    print(common_dates)
+                    for date in common_dates:
+                        common_times = sorted(set(self.teacher_slots[tname][date]) & set(self.student_slots[sname][date]), key=self.times.index)
+                        for time in common_times:
+                            self.assigned.append((sname, tname, subject, date, time, kind, grade))
+                            self.teacher_slots[tname][date].remove(time)
+                            self.student_slots[sname][date].remove(time)
+                            count += 1
+                            if count >= total:
+                                break
+                        if count >= total:
+                            break
+
+    def get_student_workbooks(self):
+        wb_map = {
+            "小学生": load_workbook(self.student_template),
+            "中学生": load_workbook(self.student_template),
+            "高校生": load_workbook(self.student_template),
+            "その他": load_workbook(self.student_template),
+        }
+        ws_map = {k: wb_map[k].active for k in wb_map}
+
+        row_maps = {}
+        date_maps = {}
+        for level, ws in ws_map.items():
+            date_col_map = {}
+            for col in range(4, ws.max_column + 1):
+                cell = ws.cell(row=1, column=col).value
+                if isinstance(cell, datetime):
+                    date_col_map[cell.strftime("%Y-%m-%d")] = col
+            date_maps[level] = date_col_map
+
+            student_row_map = {}
+            for row in range(2, ws.max_row, 2):
+                name = str(ws.cell(row=row, column=2).value).replace("さん", "").strip()
+                student_row_map[name] = (row, row + 1)
+            row_maps[level] = student_row_map
+
+        return wb_map, ws_map, row_maps, date_maps
+
+    def export_student_schedule(self):
+        wb_map, ws_map, row_maps, date_maps = self.get_student_workbooks()
+
+        for student, teacher, subject, date, time, kind, grade in self.assigned:
+            level = "その他"
+            if "小" in grade:
+                level = "小学生"
+            elif "中" in grade:
+                level = "中学生"
+            elif "高" in grade:
+                level = "高校生"
+
+            if student not in row_maps[level] or date not in date_maps[level]:
+                continue
+            row1, row2 = row_maps[level][student]
+            col = date_maps[level][date] + self.times.index(time)
+            ws = ws_map[level]
+            ws.cell(row=row1, column=col).value = subject
+            ws.cell(row=row2, column=col).value = kind
+
+        for level, wb in wb_map.items():
+            out_path = os.path.join(self.result_dir, f"{level}_時間割.xlsx")
+            wb.save(out_path)
+            print(f"✅ {level} の時間割ファイルを出力しました: {out_path}")
+
+    def export_teacher_schedule(self):
+        wb = load_workbook(self.teacher_template)
+        ws = wb.active
+
+        date_col_map = {}
+        for col in range(3, ws.max_column + 1):
+            cell = ws.cell(row=1, column=col).value
+            if isinstance(cell, datetime):
+                date_col_map[cell.strftime("%Y-%m-%d")] = col
+
+        teacher_row_map = defaultdict(list)
+        for row in range(2, ws.max_row + 1):
+            name = str(ws.cell(row=row, column=1).value).strip()
+            if name:
+                teacher_row_map[name].append(row)
+
+        assigned_slots = defaultdict(lambda: defaultdict(list))  # teacher -> date+time -> [(student, subject)]
+
+        for student, teacher, subject, date, time, kind, _ in self.assigned:
+            assigned_slots[teacher][(date, time)].append((student, subject))
+
+        for teacher in assigned_slots:
+            for (date, time), lessons in assigned_slots[teacher].items():
+                if teacher not in teacher_row_map or date not in date_col_map:
+                    continue
+                col = date_col_map[date] + self.times.index(time)
+
+                for row in teacher_row_map[teacher]:
+                    cell = ws.cell(row=row, column=col)
+                    if not cell.value:
+                        entry = ""
+                        if len(lessons) >= 2:
+                            entry = f"{lessons[0][0]}\n{lessons[0][1]}｜{lessons[1][0]}\n{lessons[1][1]}"
+                        elif len(lessons) == 1:
+                            entry = f"{lessons[0][0]}\n{lessons[0][1]}"
+                        cell.value = entry
+                        cell.alignment = Alignment(wrap_text=True)
+                        break
+
+        out_path = os.path.join(self.result_dir, "講師時間割.xlsx")
+        wb.save(out_path)
+        print(f"✅ 講師時間割ファイルを出力しました: {out_path}")
+
+    def run(self):
+        self.prepare_slots()
+        self.assign()
+        self.export_student_schedule()
+        self.export_teacher_schedule()

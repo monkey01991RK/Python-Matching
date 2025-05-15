@@ -8,15 +8,23 @@ from openpyxl.cell.cell import Cell
 from datetime import datetime, timedelta
 from openpyxl import Workbook as OpenpyxlWorkbook
 from openpyxl.utils import get_column_letter
+from collections import defaultdict
 
-def _normalize_name(name: str) -> str:
-    return unicodedata.normalize("NFKC", name.replace("　", " ")).strip()
+import unicodedata
+
+def _normalize_name(name):
+    # Convert full-width to half-width, strip, remove extra spaces
+    name = unicodedata.normalize("NFKC", name)
+    name = name.replace("　", " ")  # full-width space to half-width
+    name = " ".join(name.strip().split())  # remove double spaces
+    return name
+
 TIME_ROW_MAP = {
-    "13:10": 5,
-    "14:40": 6,
-    "16:30": 7,
-    "18:00": 8,
-    "19:30": 9,
+    "13:10":5 ,
+    "14:40":6,
+    "16:30":7,
+    "18:00":8,
+    "19:30":9,
 }
 
 def copy_worksheet_template(target_wb, template_ws, new_title):
@@ -43,7 +51,6 @@ def copy_worksheet_template(target_wb, template_ws, new_title):
         new_ws.merge_cells(str(merged_range))
     return new_ws
 
-
 def get_top_left_if_merged(ws, row, col):
     cell_coord = f"{get_column_letter(col)}{row}"
     for merged_range in ws.merged_cells.ranges:
@@ -52,8 +59,10 @@ def get_top_left_if_merged(ws, row, col):
     return ws.cell(row=row, column=col)
 
 
+
 class Schedule_result:
     def __init__(self, student_data, teacher_data, match_data, student_template, teacher_template, date_list):
+        # Ensure that all names in student_data are normalized properly.
         self.student_data = {
             _normalize_name(k): v for k, v in student_data.items()
         }
@@ -63,7 +72,7 @@ class Schedule_result:
         self.subject_data = match_data
         self.student_template = student_template
         self.teacher_template = teacher_template
-        self.date_list= date_list
+        self.date_list = date_list
         self.teacher_output_path = "output/teachers_schedule.xlsx"
         self.student_output_dirs = {
             'elementary': "output/students_elementary.xlsx",
@@ -73,93 +82,155 @@ class Schedule_result:
         self.schedule_data = []
         self.date_order = []
         self.used_teacher_slots = {}  # (teacher, date, time, booth_index) -> True
+
     def run(self):
+        # Normalize student names before running the schedule
+        self.normalize_student_names()
         self.generate_schedule()
         self.generate_teacher_excel()
         self.generate_student_excels()
-    @staticmethod
-    def parse_date(date_str):
-        return datetime.strptime(date_str, "%Y-%m-%d")
-    def generate_schedule(self):
-        matched_pairs = set()
-        teacher_daily_count = {}
-        student_daily_count = {}
-        last_scheduled = {}  # (student, teacher, subject) -> [datetime objects]
-        for entry in self.subject_data:
-            student_name = _normalize_name(entry.get('student_name', ''))
-            grade = entry.get('grade', 'other')
+
+    def is_slot_available(self, student, teacher, date, time, booth_index):
+        student = _normalize_name(student)
+        teacher = _normalize_name(teacher)
+        normalized_time = unicodedata.normalize("NFKC", time)
+
+        available_times_student = list(self.student_data.get(student, {}).get("schedule", {}).get(date, {}).keys())
+        available_times_teacher = list(self.teacher_data.get(teacher, {}).get("schedule", {}).get(date, {}).keys())
+        
+        student_avail = self.student_data.get(student, {}).get("schedule", {}).get(date, {}).get(time, False)
+        teacher_avail = self.teacher_data.get(teacher, {}).get("schedule", {}).get(date, {}).get(time, False)
+        
+        # Fix: Ensure teacher availability at the booth
+        if booth_index >= len(teacher_avail):
+            # print(f"⚠️ Booth {booth_index} out of range for {teacher} on {date} at {time}.")
+            return False
             
-            if student_name not in self.student_data:
-                continue
-            student_avail = self.student_data[student_name].get('schedule', {})
-            # print(student_name)
-            # print(student_avail)
+        return student_avail and teacher_avail[booth_index]
+
+    def normalize_student_names(self):
+        # print("📋 Normalizing student names...")
+        # Step 1: Normalize keys in student_data
+        normalized_data = {}
+        for k in self.student_data:
+            norm_k = _normalize_name(k)
+            normalized_data[norm_k] = self.student_data[k]
+            # print(f" - {k} ➜ {norm_k}")
+        self.student_data = normalized_data  # Replace with normalized keys
+        # Step 2: Normalize student names inside subject_data
+        for entry in self.subject_data:
+            entry['student_name'] = _normalize_name(entry['student_name'])
+
+    def generate_schedule(self):
+        # 1. Group all subject-teacher pairs by student
+        student_subject_map = defaultdict(list)
+        for entry in self.subject_data:
+            student = entry['student_name']
+            grade = entry.get('grade', 'other')
             for subj in entry.get('subjects', []):
-                # print(subj)
-                if not isinstance(subj, dict):
-                    continue
-                subject = subj.get('name')
-                raw_teacher = subj.get('teacher', '')
-                # print(raw_teacher)
-                teacher = _normalize_name(raw_teacher.get('name') if isinstance(raw_teacher, dict) else raw_teacher)
-                if teacher not in self.teacher_data:
-                    continue
-                teacher_avail = self.teacher_data[teacher].get('schedule', {})
+                teacher_raw = subj.get('teacher')
+                teacher = _normalize_name(teacher_raw.get('name') if isinstance(teacher_raw, dict) else teacher_raw)
+                subject_name = subj.get('name')
                 subject_type = '特別' if subj.get('special_classes', 0) > 0 else '通常'
-                pair_key = (student_name, teacher, subject)
-                last_scheduled.setdefault(pair_key, [])
-                total_classes = subj.get('regular_classes', 0) + subj.get('special_classes', 0)
-                # print(total_classes)
-                if total_classes == 0:
+                count = subj.get('regular_classes', 0) + subj.get('special_classes', 0)
+                if count > 0:
+                    student_subject_map[student].append({
+                        'teacher': teacher,
+                        'subject': subject_name,
+                        'type': subject_type,
+                        'count': count,
+                        'grade': grade
+                    })
+        # 2. Group by teacher -> students list
+        teacher_to_subjects = defaultdict(list)
+        for student, subj_list in student_subject_map.items():
+            for subj in subj_list:
+                teacher = subj['teacher']
+                teacher_to_subjects[teacher].append((student, subj))
+
+        # 3. Sort teachers by number of total lectures needed
+        teacher_priority = sorted(
+            teacher_to_subjects.items(),
+            key=lambda x: -sum(sub['count'] for _, sub in x[1])
+        )
+
+        schedule_map = []  # final list of dicts like self.schedule_data
+        teacher_slot_tracker = {}  # (teacher, date, time) -> list of students
+
+        def assign(student, teacher, date, time, booth_index, subject, subject_type, grade):
+            print(student, teacher, date, time, booth_index, subject, subject_type, grade)
+            self.student_data[student]['schedule'][date][time] = False
+            self.teacher_data[teacher]['schedule'][date][time][booth_index] = False
+            key = (teacher, date, time, booth_index)
+            self.used_teacher_slots[key] = True
+            teacher_slot_tracker.setdefault((teacher, date, time), []).append(student)
+            schedule_map.append({
+                'date': date,
+                'time': time,
+                'student': student,
+                'teacher': teacher,
+                'subject': subject,
+                'type': subject_type,
+                'grade': grade
+            })
+
+        for teacher, student_subjects in teacher_priority:
+            teacher = _normalize_name(teacher)
+            student_subjects.sort(key=lambda x: x[1]['count'])
+
+            for student, subject_data in student_subjects:
+                student = _normalize_name(student)
+                remaining = subject_data['count']
+                subject = subject_data['subject']
+                subject_type = subject_data['type']
+                grade = subject_data['grade']
+                last_scheduled_dates = []
+                if student not in self.student_data:
+                    # print(f"⚠️ Student not found in student_data: {student}")
                     continue
-                available_dates = sorted(set(student_avail.keys()) & set(teacher_avail.keys()))
-              
-                for date_str in available_dates:
-                    date_obj = self.parse_date(date_str)
-                    # Enforce spacing between sessions
 
-                    if any(abs((date_obj - prev).days) < 2 for prev in last_scheduled[pair_key]):
+                for date in sorted(set(self.date_list) & set(self.student_data[student]['schedule'].keys())):
+                    if remaining <= 0:
+                        break
+                    if date not in self.teacher_data[teacher]['schedule']:
                         continue
-                    
-                    if total_classes > 12 and any(abs((date_obj - prev).days) < 4 for prev in last_scheduled[pair_key]):
-                        continue
-                    teacher_daily = teacher_daily_count.setdefault(teacher, {})
-                    student_daily = student_daily_count.setdefault(student_name, {})
-                    if teacher_daily.get(date_str, 0) >= 2 or student_daily.get(date_str, 0) >= 2:
-                        continue
-                    for time_slot in TIME_ROW_MAP:
-                        if not (student_avail[date_str].get(time_slot) and teacher_avail[date_str].get(time_slot)):
+
+                    for time in TIME_ROW_MAP:
+                        normalized_time = unicodedata.normalize("NFKC", time)
+                        if normalized_time not in self.teacher_data[teacher]['schedule'][date]:
+                            # print(f"❌ Time '{normalized_time}' not found on {date} for {teacher}")/
                             continue
-                        t_free_list = teacher_avail[date_str][time_slot]
-                        for booth_index in range(len(t_free_list)):
-                            key = (teacher, date_str, time_slot, booth_index)
-                            if t_free_list[booth_index] and not self.used_teacher_slots.get(key):
 
-                                self.schedule_data.append({
-                                    'date': date_str,
-                                    'time': time_slot,
-                                    'student': student_name,
-                                    'teacher': teacher,
-                                    'subject': subject,
-                                    'type': subject_type,
-                                    'grade': grade
-                                })
-                                # Mark slot used
-                                student_avail[date_str][time_slot] = False
-                                teacher_avail[date_str][time_slot][booth_index] = False
-                                self.used_teacher_slots[key] = True
-                                # Update counts
-                                teacher_daily[date_str] = teacher_daily.get(date_str, 0) + 1
-                                student_daily[date_str] = student_daily.get(date_str, 0) + 1
-                                last_scheduled[pair_key].append(date_obj)
+                        if remaining <= 0:
+                            break
+                        for booth_index in range(len(self.teacher_data[teacher]['schedule'][date][normalized_time])):
+                            key = (teacher, date, time)
+                            print(len(teacher_slot_tracker.get(key, [])) >= 2)
+                            if len(teacher_slot_tracker.get(key, [])) >= 2:
+                                print(f"🛑 Skipped: {teacher} has 2 students already at {date} {time}")
+                                continue
+
+                            date_obj = datetime.strptime(date, "%Y-%m-%d")
+                            if any(abs((date_obj - prev).days) < 2 for prev in last_scheduled_dates):
+                                # print(f"⏭️ Skipped: {student}'s lesson on {date} too close to previous")
+                                continue
+                            if subject_data['count'] > 12 and any(abs((date_obj - prev).days) < 4 for prev in last_scheduled_dates):
+                                # print(f"⏭️ Skipped: {student}'s >12 lessons, too close to previous")
+                                continue
+                           
+                            if self.is_slot_available(student, teacher, date, normalized_time, booth_index):
+                                print(f"❌ No slot: {student} or {teacher} not available on {date} {time} booth {booth_index}")
+                                assign(student, teacher, date, time, booth_index, subject, subject_type, grade)
+                                last_scheduled_dates.append(date_obj)
+                                remaining -= 1
                                 break
-                        else:
-                            continue
-                        break
-                    if len(last_scheduled[pair_key]) >= total_classes:
-                        break
-                    print(self.schedule_data)
-        self.date_order = sorted({entry['date'] for entry in self.schedule_data})
+
+                if remaining > 0:
+                    print(f"⚠️ Could not fully schedule {student} for {subject} with {teacher}, {remaining} left.")
+
+        self.schedule_data = schedule_map
+        self.date_order = sorted({entry['date'] for entry in schedule_map})
+
     def generate_teacher_excel(self):
         if not self.schedule_data:
             print("⚠️ No teacher data found — no file saved.")
@@ -171,12 +242,13 @@ class Schedule_result:
         name_map = {}
 
         for entry in self.schedule_data:
-            full_name = entry['teacher']
+            full_name = _normalize_name(entry['teacher'])
             match = None
             for sheet_name in template_sheetnames:
                 normalized_sheet = _normalize_name(sheet_name)
                 if full_name == normalized_sheet or normalized_sheet in full_name:
                     match = sheet_name
+                    full_name = _normalize_name(entry['teacher'])  
                     break
 
             if match:
@@ -227,6 +299,7 @@ class Schedule_result:
             return None
         grouped_students = {'elementary': [], 'middle': [], 'high': []}
         for entry in self.schedule_data:
+            
             grade_raw = entry.get('grade', '')
             grade = normalize_grade(grade_raw)
             if grade in grouped_students:
@@ -259,7 +332,6 @@ class Schedule_result:
                     for sheet_name in template_wb.sheetnames:
                         student_norm = _normalize_name(student)
                         sheet_norm = _normalize_name(sheet_name)
-                        # print(student_norm, "==", sheet_norm)
                         # Direct full or partial match
                         if (
                             student_norm == sheet_norm or
